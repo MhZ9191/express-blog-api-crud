@@ -1,9 +1,33 @@
 const postsData = require("../data/blogsData");
 
 function index(req, res) {
+  const searchQuery = req.query.search;
+
+  if (!searchQuery) {
+    return res.json({
+      message: "Visualizzo tutti gli elementi",
+      result: postsData,
+      success: true,
+    });
+  }
+
+  const parseSearch = searchQuery.toLowerCase().trim();
+  const searchFilter = postsData.filter((el) => {
+    if (
+      el.title.toLowerCase().trim().includes(parseSearch) ||
+      el.tags.some((ele) => ele.toLowerCase().trim().includes(parseSearch))
+    ) {
+      return true;
+    }
+    return false;
+  });
+
   res.json({
-    message: "Visualizza tutti gli elementi",
-    result: postsData,
+    message:
+      searchFilter.length > 0
+        ? "Risultati filtrati"
+        : "Risultati non trovati, visualizzo tutti gli elementi",
+    result: searchFilter.length > 0 ? searchFilter : postsData,
     success: true,
   });
 }
@@ -63,7 +87,7 @@ function destroy(req, res) {
   const tmpElement = postsData[indexitem];
   postsData.splice(indexitem, 1);
   console.log(postsData);
-  res.json({
+  res.status(204).json({
     messagge: "Elemento eliminato",
     result: tmpElement,
     success: true,
