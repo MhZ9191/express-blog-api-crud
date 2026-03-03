@@ -1,15 +1,10 @@
 const postsData = require("../data/blogsData");
 const express = require("express");
 const posts = express();
+const blogController = require("../controllers/BlogController");
 
 //! Index
-posts.get("/", (req, res) => {
-  res.json({
-    message: "Visualizza tutti gli elementi",
-    result: postsData,
-    success: true,
-  });
-});
+posts.get("/", blogController.index);
 
 //! Show
 posts.get("/:id", (req, res) => {

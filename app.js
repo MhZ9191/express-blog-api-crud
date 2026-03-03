@@ -7,6 +7,7 @@ const appUrl = `http://127.0.0.1:${port}`;
 
 const posts = require("./routers/posts");
 
+app.use(express.static("public"));
 app.use("/posts", posts);
 app.get("/", (req, res) => {
   res.json({
