@@ -91,8 +91,39 @@ function store(req, res) {
 }
 
 function update(req, res) {
+  const objectId = postsData.find((el) => el.id === parseInt(req.params.id));
+  if (!objectId) {
+    return res.status(404).json({
+      error: "Error",
+      message: "ID not found",
+    });
+  }
+  const bodyReq = req.body;
+  if (!bodyReq) {
+    return res.status(400).json({
+      error: "Bad Request",
+      message: "Il server non può elaborare la richiesta del client",
+      success: false,
+    });
+  }
+  const { title, content, image, tags } = req.body;
+  const resultValidation = validateDataReq(bodyReq, objectId);
+  if (!resultValidation.success) {
+    return res.status(400).json({
+      error: "Error",
+      message: resultValidation.message,
+      success: false,
+    });
+  }
+
+  objectId.title = title;
+  objectId.content = content;
+  objectId.image = image;
+  objectId.tags = [...tags];
+
   res.json({
     message: "Modifico interamente un elemento",
+    result: objectId,
     success: true,
   });
 }
@@ -126,7 +157,7 @@ function destroy(req, res) {
   });
 }
 
-function validateDataReq(req) {
+function validateDataReq(req, obId) {
   const { title, content, image, tags } = req;
 
   if (typeof title != "string" || !title.trim()) {
@@ -136,9 +167,12 @@ function validateDataReq(req) {
     };
   }
 
-  const duplicateTitle = postsData.some(
-    (el) => el.title.toLowerCase().trim() === title.toLowerCase().trim(),
-  );
+  const duplicateTitle = postsData.some((el) => {
+    if (obId && el.id === obId.id) return false;
+    if (el.title.toLowerCase().trim() === title.toLowerCase().trim()) {
+      return true;
+    }
+  });
 
   if (duplicateTitle) {
     return {
