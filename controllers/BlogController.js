@@ -107,7 +107,7 @@ function update(req, res) {
     });
   }
   const { title, content, image, tags } = req.body;
-  const resultValidation = validateDataReq(bodyReq, objectId);
+  const resultValidation = validateDataReq(bodyReq, objectId, req);
   if (!resultValidation.success) {
     return res.status(400).json({
       error: "Error",
@@ -129,8 +129,40 @@ function update(req, res) {
 }
 
 function modify(req, res) {
+  const objectId = postsData.find((el) => el.id === parseInt(req.params.id));
+  if (!objectId) {
+    return res.status(404).json({
+      error: "Error",
+      message: "ID not found",
+    });
+  }
+  const bodyReq = req.body;
+  if (!bodyReq) {
+    return res.status(400).json({
+      error: "Bad Request",
+      message: "Il server non può elaborare la richiesta del client",
+      success: false,
+    });
+  }
+  const { title, content, image, tags } = req.body;
+
+  const resultValidation = validateDataReq(bodyReq, objectId, req);
+  if (!resultValidation.success) {
+    return res.status(400).json({
+      error: "Error",
+      message: resultValidation.message,
+      success: false,
+    });
+  }
+
+  if (title !== undefined) objectId.title = title;
+  if (content !== undefined) objectId.content = content;
+  if (image !== undefined) objectId.image = image;
+  if (tags !== undefined) objectId.tags = [...tags];
+
   res.json({
     message: "Modifico parzialmente un elemento",
+    result: objectId,
     success: true,
   });
 }
@@ -157,22 +189,30 @@ function destroy(req, res) {
   });
 }
 
-function validateDataReq(req, obId) {
-  const { title, content, image, tags } = req;
+function validateDataReq(reqBody, obId, request) {
+  const { title, content, image, tags } = reqBody;
+  const meth = request.method;
 
-  if (typeof title != "string" || !title.trim()) {
+  const checkFull = meth === "PUT" || meth === "POST" ? true : false;
+
+  if (
+    (checkFull || title != undefined) &&
+    (typeof title != "string" || !title.trim())
+  ) {
     return {
       message: "Campo title non valido",
       success: false,
     };
   }
 
-  const duplicateTitle = postsData.some((el) => {
-    if (obId && el.id === obId.id) return false;
-    if (el.title.toLowerCase().trim() === title.toLowerCase().trim()) {
-      return true;
-    }
-  });
+  const duplicateTitle =
+    title !== undefined &&
+    postsData.some((el) => {
+      if (obId && el.id === obId.id) return false;
+      if (el.title.toLowerCase().trim() === title.toLowerCase().trim()) {
+        return true;
+      }
+    });
 
   if (duplicateTitle) {
     return {
@@ -181,33 +221,41 @@ function validateDataReq(req, obId) {
     };
   }
 
-  if (typeof content != "string" || !content.trim()) {
+  if (
+    (checkFull || content != undefined) &&
+    (typeof content != "string" || !content.trim())
+  ) {
     return {
       message: "Campo content non valido",
       success: false,
     };
   }
 
-  if (typeof image != "string" || !image.trim()) {
+  if (
+    (checkFull || image != undefined) &&
+    (typeof image != "string" || !image.trim())
+  ) {
     return {
       message: "Campo image non valido",
       success: false,
     };
   }
 
-  if (!tags || !Array.isArray(tags)) {
+  if ((checkFull || tags != undefined) && (!tags || !Array.isArray(tags))) {
     return {
       message: "Campo tags non valido",
       success: false,
     };
   }
 
-  for (const el of tags) {
-    if (typeof el !== "string" || el.trim().length === 0) {
-      return {
-        message: "Campi tag non validi",
-        success: false,
-      };
+  if (tags !== undefined) {
+    for (const el of tags) {
+      if (typeof el !== "string" || el.trim().length === 0) {
+        return {
+          message: "Campi tag non validi",
+          success: false,
+        };
+      }
     }
   }
 
